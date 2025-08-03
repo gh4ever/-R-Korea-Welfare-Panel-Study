@@ -1,0 +1,105 @@
+---
+title: "2015_Koweps_Data_Analysis_by_Erika_Ryu"
+author: "jhryu"
+date: "2025-08-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(foreign)
+library(haven)
+library(dplyr)
+library(ggplot2)
+
+# 📂 데이터 불러오기 및 변수명 변경
+data <- read_sav("Koweps_hpc10_2015_beta10.sav")
+
+data <- rename(data,
+               sex = h10_g3,         # 성별
+               birth = h10_g4,       # 출생년도
+               marriage = h10_g10,   # 결혼여부
+               income = p1002_8aq1,  # 월급
+               code_job = h10_eco9,  # 직종코드
+               code_region = h10_reg7) # 지역코드
+
+summary(data)
+str(data)
+
+# 🧼 성별 변수 전처리
+data$sex <- ifelse(data$sex == 9, NA, data$sex)
+data$sex <- factor(data$sex, levels = c(1, 2), labels = c("male", "female"))
+qplot(data$sex)
+
+# 📈 성별 평균 월급
+
+sex_income <- data %>%
+  filter(!is.na(income)) %>%
+  group_by(sex) %>%
+  summarise(mean_income = mean(income))
+
+ggplot(sex_income, aes(x = sex, y = mean_income, fill = sex)) +
+  geom_col() +
+  labs(title = "성별 평균 월급 비교", x = "성별", y = "평균 월급(만원)") +
+  theme_minimal()
+
+# 🧮 나이 계산 및 시각화
+data$age <- 2015 - data$birth + 1
+qplot(data$age)
+
+# 📈 나이별 평균 월급
+age_income <- data %>%
+  filter(!is.na(income)) %>%
+  group_by(age) %>%
+  summarise(mean_income = mean(income))
+
+ggplot(age_income, aes(x = age, y = mean_income)) +
+  geom_line() +
+  labs(title = "나이에 따른 평균 월급", x = "나이", y = "평균 월급(만원)")
+
+# 🧠 연령대 변수 생성
+data <- data %>%
+  mutate(ageg = case_when(
+    age < 30 ~ "young",
+    age < 60 ~ "middle",
+    TRUE ~ "old"
+  ))
+
+qplot(data$ageg)
+
+# 📊 연령대별 평균 월급
+ageg_income <- data %>%
+  filter(!is.na(income)) %>%
+  group_by(ageg) %>%
+  summarise(mean_income = mean(income))
+
+ggplot(ageg_income, aes(x = factor(ageg, levels = c("young", "middle", "old")), y = mean_income)) +
+  geom_col() +
+  labs(title = "연령대별 평균 월급", x = "연령대", y = "평균 월급(만원)")
+
+#📊 성별·연령대별 평균 월급
+sex_ageg_income <- data %>%
+  filter(!is.na(income)) %>%
+  group_by(ageg, sex) %>%
+  summarise(mean_income = mean(income))
+
+ggplot(sex_ageg_income, aes(x = factor(ageg, levels = c("young", "middle", "old")), y = mean_income, fill = sex)) +
+  geom_col(position = "dodge") +
+  labs(title = "성별·연령대별 평균 월급 비교", x = "연령대", y = "평균 월급(만원)")
+
+# 📈 성별·나이별 월급 추이
+sex_age <- data %>%
+  filter(!is.na(income)) %>%
+  group_by(age, sex) %>%
+  summarise(mean_income = mean(income))
+
+ggplot(sex_age, aes(x = age, y = mean_income, color = sex)) +
+  geom_line() +
+  labs(title = "성별에 따른 나이별 평균 월급", x = "나이", y = "평균 월급(만원)")
+
+# 📊 성별 평균 월급 차이의 통계적 유의성 검정
+t.test(income ~ sex, data = data)
+
+# 이거 안되면,
+data_ttest <- data %>% filter(!is.na(income), !is.na(sex))
+t.test(income ~ sex, data = data_ttest)
