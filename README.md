@@ -1,6 +1,4 @@
-# R-Korea-Welfare-Panel-Study
-
-# 한국인의 삶을 파악하라! 
+# R-Korea-Welfare-Panel-Study: 한국인의 삶을 파악하라! 
 ## KOWEPS 데이터 분석 프로젝트
 
 이 프로젝트는 온라인평생교육(https://www.step.or.kr/)의 **데이터분석 기초프로그래밍** 강의의 9차, 10차시 수업에서 공부한 내용입니다. 
